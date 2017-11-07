@@ -39,23 +39,7 @@ export function run({
 
   app.use('/graphiql', graphiqlExpress({
     endpointURL: '/graphql',
-    query: `
-       {post(_id:"59e9d02366adf5394033c520"){
-        title,
-        content
-      }
-      }
-      {
-      mutation {
-        createPost(post: {
-          title: "andy",
-          content: "hope is a good thing",
-        }) {
-          _id
-        }
-      }
-      }
-        `,
+     subscriptionsEndpoint: `ws://localhost:${port}/subscriptions`
   }));
 
   const engine = new Engine({
@@ -71,8 +55,21 @@ export function run({
   app.use(engine.expressMiddleware());
   const server = createServer(app);
   server.listen(port, () => {
+    // add subscription server
+    new SubscriptionServer(
+        {
+        execute,
+        subscribe,
+        schema
+        },
+        {
+          server: server,
+          path : '/subscriptions'
+        })
     console.log(`API Server is now running on http://localhost:${port}`); // eslint-disable-line no-console
+    console.log(`API Subscriptions server is now running on ws://localhost:${port}/subscriptions`)
   });
+
 
   return app;
 }
