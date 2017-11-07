@@ -1,0 +1,26 @@
+{
+  "apiKey": "service:bunderwood101-Tribe:moGYExh5flMMWYjSFSbv9w",
+  "stores": [
+    {
+      "name": "embeddedCache"
+    }
+  ],
+  "operations": [
+    {
+      "signature": "query getposts1{posts{title,content,author}}",
+      "caches": [
+        {
+          "ttl": 600,
+          "store": "embeddedCache"
+        }
+      ]
+    }
+  ],
+  "sessionAuth": {
+    "store": "embeddedCache",
+    "header": "Authorization"
+  },
+  "logcfg": {
+    "level": "DEBUG"
+  }
+}

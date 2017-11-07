@@ -1,7 +1,7 @@
 {
-  "name": "githunt-api",
+  "name": "Tribe_CMS",
   "version": "1.0.0",
-  "description": "Example app for Apollo",
+  "description": "E",
   "scripts": {
     "start": "babel-node api/index.js",
     "dev": "nodemon api/index.js --watch api --exec babel-node",
@@ -10,8 +10,7 @@
     "test:watch": "jest --watch",
     "seed": "knex seed:run",
     "migrate": "knex migrate:latest",
-    "test:setup":
-      "rm test.sqlite3 || true; knex migrate:latest --env test && knex seed:run --env test"
+    "test:setup": "rm test.sqlite3 || true; knex migrate:latest --env test && knex seed:run --env test"
   },
   "private": true,
   "repository": {
@@ -27,6 +26,8 @@
   "devDependencies": {
     "babel-eslint": "7.2.1",
     "babel-jest": "^20.0.0",
+    "babel-plugin-syntax-async-functions": "^6.13.0",
+    "babel-plugin-transform-regenerator": "^6.26.0",
     "casual": "^1.5.11",
     "eslint": "3.19.0",
     "eslint-config-airbnb": "14.1.0",
@@ -39,8 +40,7 @@
     "sqlite3": "^3.1.8"
   },
   "dependencies": {
-    "apollo-engine":
-      "https://s3.us-east-2.amazonaws.com/apollo-engine-deploy/apollo-engine-0.3.5.tgz",
+    "apollo-engine": "https://s3.us-east-2.amazonaws.com/apollo-engine-deploy/apollo-engine-0.3.5.tgz",
     "apollo-server-express": "^1.1.2",
     "babel-cli": "6.23.0",
     "babel-core": "6.24.1",
@@ -49,7 +49,7 @@
     "babel-preset-stage-2": "6.22.0",
     "babel-register": "6.24.0",
     "body-parser": "1.17.1",
-    "compression": "^1.7.0",
+    "compression": "^1.7.1",
     "connect-session-knex": "1.3.4",
     "cookie": "^0.3.1",
     "cookie-parser": "^1.4.3",
@@ -64,6 +64,7 @@
     "graphql-tools": "^1.0.0",
     "knex": "0.13.0",
     "lodash": "4.17.4",
+    "mongoose": "^4.12.3",
     "optics-agent": "^1.0.5",
     "passport": "0.3.2",
     "passport-github": "1.1.0",
