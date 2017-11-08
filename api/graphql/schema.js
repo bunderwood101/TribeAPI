@@ -2,6 +2,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import Post from './types/blog-post';
 import PostInput from './types/blog-post-input';
 import mongoose from 'mongoose'
+import { PubSub, withFilter } from 'graphql-subscriptions';
 var ObjectId = require('mongodb').ObjectID;
 
 //Set up default mongoose connection
@@ -34,8 +35,6 @@ const RootQuery = `
   }
 `;
 
-
-
 const Mutations = `
   type Mutation {
     createPost(post: BlogPostInput!) : Post
@@ -44,6 +43,12 @@ const Mutations = `
   }
 `;
 
+const Subscriptions = `
+  type Subscription {
+    postCreated : Post
+  }
+`
+const pubsub = new PubSub()
 const resolvers = {
   RootQuery: {
     post: async (root, {_id}) => {
@@ -69,7 +74,7 @@ const resolvers = {
   Mutation: {
     createPost: async(root, args, context, info) => {
       const res = await Posts.insert(args.post)
-      console.log(res.insertedIds[0])
+      pubsub.publish('postCreated', { postCreated : args.post})
       return prepare(await Posts.findOne({_id: res.insertedIds[0]}))
     },
     updatePost: async(root, args, context, info) => {
@@ -84,17 +89,26 @@ const resolvers = {
       return prepare(await Comments.findOne({_id: res.insertedIds}))
     },
   },
+  Subscription: {
+    postCreated : {
+      // can add withFilter here to, for example only return a particular hashtag
+      subscribe: (
+        () => pubsub.asyncIterator('postCreated')
+      )
+    }
+  }
 }
 
 const SchemaDefinition = `
   schema {
     query: RootQuery,
-    mutation: Mutation
+    mutation: Mutation,
+    subscription: Subscription
   }
 `;
 export default makeExecutableSchema({
   typeDefs: [
-    SchemaDefinition, RootQuery, PostInput, Mutations,
+    SchemaDefinition, RootQuery, PostInput, Mutations, Subscriptions,
     // we have to destructure array imported from the blog-post.js file
     // as typeDefs only accepts an array of strings or functions
     ...Post
