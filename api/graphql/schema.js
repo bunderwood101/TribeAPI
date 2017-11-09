@@ -1,6 +1,8 @@
 import { makeExecutableSchema } from 'graphql-tools';
 import Post from './types/blog-post';
 import PostInput from './types/blog-post-input';
+import User from './types/user';
+import UserInput from './types/user-input';
 import mongoose from 'mongoose'
 import { PubSub, withFilter } from 'graphql-subscriptions';
 var ObjectId = require('mongodb').ObjectID;
@@ -20,6 +22,7 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 const Posts = db.collection('posts')
 const Comments = db.collection('comments')
+const Users = db.collection('users')
 
 const prepare = (o) => {
   // no longer needed as _id is being stored as an actual ID
@@ -32,6 +35,7 @@ const RootQuery = `
     post(_id: ID!): Post
     posts: [Post]
     comment(_id: String) : Comment
+    user(_id: ID!) : User
   }
 `;
 
@@ -40,6 +44,7 @@ const Mutations = `
     createPost(post: BlogPostInput!) : Post
     updatePost(_id: ID!, input: BlogPostInput) : Post
     createComment(postId: String, content: String) : Comment
+    createUser(user: UserInput!) : User
   }
 `;
 
@@ -59,7 +64,10 @@ const resolvers = {
     },
     comment:async (root, {_id}) => {
      return prepare(await Comments.findOne(ObjectId(_id)))
-  },
+   },
+   user: async (root, {_id}) => {
+      return prepare(await Users.findOne(ObjectId(_id)))
+    }
   },
   Post: {
     comments: async ({postId}) => {
@@ -88,6 +96,10 @@ const resolvers = {
       const res = await Comments.insert(args)
       return prepare(await Comments.findOne({_id: res.insertedIds}))
     },
+    createUser: async(root, args, context, info) => {
+      const res = await Users.insert(args.user)
+      return prepare(await Users.findOne({_id: res.insertedIds[0]}))
+    }
   },
   Subscription: {
     postCreated : {
@@ -108,10 +120,11 @@ const SchemaDefinition = `
 `;
 export default makeExecutableSchema({
   typeDefs: [
-    SchemaDefinition, RootQuery, PostInput, Mutations, Subscriptions,
+    SchemaDefinition, RootQuery, Mutations, Subscriptions,
     // we have to destructure array imported from the blog-post.js file
     // as typeDefs only accepts an array of strings or functions
-    ...Post
+    ...Post, PostInput, User, UserInput
+
 
   ],
   // we could also concatenate arrays
