@@ -7,7 +7,7 @@
   ],
   "operations": [
     {
-      "signature": "query getposts1{posts{title,content,author}}",
+      "signature": "query getposts{posts{title,content,author}}",
       "caches": [
         {
           "ttl": 600,

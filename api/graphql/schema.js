@@ -7,22 +7,13 @@ import mongoose from 'mongoose'
 import { PubSub, withFilter } from 'graphql-subscriptions';
 var ObjectId = require('mongodb').ObjectID;
 
-//Set up default mongoose connection
-var mongoDB = 'mongodb://rw:vCI2yaDowOaPtMu3@sandbox-shard-00-00-u9lfk.mongodb.net:27017,sandbox-shard-00-01-u9lfk.mongodb.net:27017,sandbox-shard-00-02-u9lfk.mongodb.net:27017/test?ssl=true&replicaSet=sandbox-shard-0&authSource=admin';
-mongoose.connect(mongoDB, {
-  useMongoClient: true,
-  promiseLibrary: global.Promise
-});
+// get the default connection
+var dbconn = mongoose.connection;
 
-//Get the default connection
-var db = mongoose.connection;
-
-//Bind connection to error event (to get notification of connection errors)
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-
-const Posts = db.collection('posts')
-const Comments = db.collection('comments')
-const Users = db.collection('users')
+// get mongo collectins
+const Posts = dbconn.collection('posts')
+const Comments = dbconn.collection('comments')
+const Users = dbconn.collection('users')
 
 const prepare = (o) => {
   // no longer needed as _id is being stored as an actual ID
@@ -54,6 +45,7 @@ const Subscriptions = `
   }
 `
 const pubsub = new PubSub()
+
 const resolvers = {
   RootQuery: {
     post: async (root, {_id}) => {
@@ -121,13 +113,8 @@ const SchemaDefinition = `
 export default makeExecutableSchema({
   typeDefs: [
     SchemaDefinition, RootQuery, Mutations, Subscriptions,
-    // we have to destructure array imported from the blog-post.js file
-    // as typeDefs only accepts an array of strings or functions
+    // ellipsis destructure array imported from the blog-post.js file as typeDefs only accepts an array of strings or functions
     ...Post, PostInput, User, UserInput
-
-
   ],
-  // we could also concatenate arrays
-  // typeDefs: [SchemaDefinition, RootQuery].concat(Post)
   resolvers: resolvers,
 });

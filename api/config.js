@@ -1,4 +1,2 @@
-export default {
-  persistedQueries: false,
-  sessionStoreSecret: 'your secret',
-};
+import dotenv from 'dotenv'
+dotenv.config()
