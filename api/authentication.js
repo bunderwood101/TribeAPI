@@ -1,8 +1,10 @@
+import bcrypt from 'bcryptjs'
+
+let saltRounds = parseInt(process.env.SALTROUNDS) || 10
+
 const HEADER_REGEX = /bearer token-(.*)$/;
 
-// This is an extremely simple token. In real applications make
-// sure to use a better one, such as JWT (https://jwt.io/).
-// see https://medium.freecodecamp.org/securing-node-js-restful-apis-with-json-web-tokens-9f811a92bb52
+// see https://medium.com/react-native-training/building-chatty-part-7-authentication-in-graphql-cd37770e5ab3
 
 export function authenticate(){
   async ({headers: {authorization}}, Users) => {
@@ -11,7 +13,24 @@ export function authenticate(){
     }
   }
 
-export authentication{
-  secret: process.env.secret
-  database
+// TODO add error handling for function
+export default{
+  hashPassword (plaintextPassword) {
+    return new Promise((resolve,reject) =>
+      bcrypt.hash(plaintextPassword, saltRounds).then(function (err,hash) {
+        if( err ){
+          return reject(err)
+        }
+        else {
+          return resolve(hash)
+          }
+        })
+    )
+  },
+  comparePassword (plaintextPassword, hash){
+    console.log(plaintextPassword, hash)
+    bcrypt.compare(plaintextPassword, hash).then(function(res) {
+      return(res)
+    });
+  }
 }

@@ -3,6 +3,7 @@ import express from 'express'
 import cookie from 'cookie'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import jwt from 'express-jwt'
 import { graphqlExpress, graphiqlExpress } from 'apollo-server-express'
 import { addSchemaLevelResolveFunction } from 'graphql-tools'
 import { Engine } from 'apollo-engine'
@@ -13,10 +14,11 @@ import { createServer } from 'http'
 import { SubscriptionServer } from 'subscriptions-transport-ws'
 import { execute, subscribe } from 'graphql'
 import schema from './graphql/schema'
-import query from './graphql/queries/queries'
 import config from './config'
 import db  from './db'
+import {modelUser} from './models/user';
 
+const Users = modelUser
 
 export function run({
                     PORT = process.env.port || 3010,
@@ -24,7 +26,7 @@ export function run({
 
   addSchemaLevelResolveFunction(schema, (root, args, context, info) => {
     // hope to be able to place authentication in here by accessing context
-    // console.log('context: ',context)
+    // may no longer be needed
 
 })
 
@@ -32,13 +34,27 @@ export function run({
   app.use(compression());
   app.use(cors());
   app.use(bodyParser.urlencoded({ extended: true }));
-  app.use('/graphql', bodyParser.json(), graphqlExpress({
+
+
+  app.use('/graphql', bodyParser.json(), jwt({
+    // TODO properly document
+    // on each request to graphql check for a bearer heaer with JWT, decrypt and set as req.user
+    secret: process.env.SECRET,
+    credentialsRequired: false,
+  }), graphqlExpress(req => ({
     schema,
-    // pass authentication tokens into context
-    context: {'hash': 'eifjpiwjpifjepikpnpmstart'},
+    context: {
+      user: req.user ?
+        Users.findOne({email: req.user.email}) : Promise.resolve(null),
+    },
     tracing: true,
-    cacheControl: true
-  }));
+  })));
+  // app.use('/graphql', bodyParser.json(), graphqlExpress({
+  //   schema,
+  //   context: {},
+  //   // Enable tracing:
+  //   tracing: true,
+  // }));
 
   app.use('/graphiql', graphiqlExpress({
     endpointURL: '/graphql',

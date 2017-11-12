@@ -1,7 +1,7 @@
-import blogPost from './single';
+import User from './single';
 // import blogPosts from './multiple';
 
 export default {
-  blogPost
+  User
 //  blogPosts
 };

@@ -1,0 +1,62 @@
+mutation newuser {
+  createUser(user:{
+    email: "TEST@email.com"
+    firstname: "test"
+    surname: "record"
+    enabled: true
+    locked: false
+    password: "harbour"
+  }) {
+  email
+  password
+  firstname
+	}
+}
+
+
+mutation makepost{ createPost(post:
+{
+  title:"my new title"
+  content: "my new content"
+}) {
+  title
+  content
+  author
+}}
+
+
+query findUser{ user(email:"test@email.com"){
+  firstname
+  password
+}}
+
+
+mutation letuslogin{ login(user:
+  {
+  email:"test@email.com"
+  password: "harbour"
+})
+{
+  firstname
+  surname
+  enabled
+  locked
+  password
+  jwt
+}}
+
+mutation signup{
+  signup(user:{
+  	email: "ben101@gmail.com"
+    firstname:"Ben"
+    surname:"Underwood"
+    enabled: true
+    locked: false
+    password: "myharbour"
+  }) {
+  	email
+    firstname
+    surname
+    jwt
+	}
+}

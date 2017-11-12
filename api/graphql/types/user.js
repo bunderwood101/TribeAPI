@@ -6,7 +6,11 @@ const User = `
     surname: String!
     enabled: Boolean!
     locked: Boolean!
-    password: String!
+    password: String
+    jwt: String
   }
 `;
 export default User;
+
+
+// TODO should we remove password from the GraphqL schema?

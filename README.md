@@ -1,2 +1,2 @@
 NPM Install
-NPM start
+NPM run dev

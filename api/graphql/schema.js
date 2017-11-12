@@ -1,20 +1,28 @@
 import { makeExecutableSchema } from 'graphql-tools';
+import query from './queries/queries'
 import Post from './types/blog-post';
 import PostInput from './types/blog-post-input';
 import User from './types/user';
 import UserInput from './types/user-input';
+import UserLoginInput from './types/user-login-input';
 import mongoose from 'mongoose'
+// import {modelpost} from '../models/post'
+ import {modelcomment} from '../models/Comment'
+import {modelUser} from '../models/user';
 import { PubSub, withFilter } from 'graphql-subscriptions';
+import authenticate from '../authentication'
 var ObjectId = require('mongodb').ObjectID;
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 // get the default connection
 var dbconn = mongoose.connection;
+mongoose.Promise = global.Promise
 
 // get mongo collectins
 const Posts = dbconn.collection('posts')
-const Comments = dbconn.collection('comments')
-const Users = dbconn.collection('users')
-
+const Comments = modelcomment
+const Users = modelUser
 const prepare = (o) => {
   // no longer needed as _id is being stored as an actual ID
   //o._id = o._id.toString()
@@ -26,16 +34,17 @@ const RootQuery = `
     post(_id: ID!): Post
     posts: [Post]
     comment(_id: String) : Comment
-    user(_id: ID!) : User
+    user(email: String!) : User
   }
 `;
 
 const Mutations = `
   type Mutation {
-    createPost(post: BlogPostInput!) : Post
-    updatePost(_id: ID!, input: BlogPostInput) : Post
+    createPost(post: PostInput!) : Post
+    updatePost(_id: ID!, input: PostInput) : Post
     createComment(postId: String, content: String) : Comment
-    createUser(user: UserInput!) : User
+    signup(user: UserInput!) : User
+    login(user: UserLoginInput!) : User
   }
 `;
 
@@ -57,8 +66,9 @@ const resolvers = {
     comment:async (root, {_id}) => {
      return prepare(await Comments.findOne(ObjectId(_id)))
    },
-   user: async (root, {_id}) => {
-      return prepare(await Users.findOne(ObjectId(_id)))
+   user: async (root, {email}) => {
+     let Users = dbconn.collection('users')
+      return prepare(await Users.findOne({email: email}))
     }
   },
   Post: {
@@ -74,8 +84,9 @@ const resolvers = {
   Mutation: {
     createPost: async(root, args, context, info) => {
       const res = await Posts.insert(args.post)
+      // TODO change subscription to use newly inserted item
       pubsub.publish('postCreated', { postCreated : args.post})
-      return prepare(await Posts.findOne({_id: res.insertedIds[0]}))
+      return prepare(await Posts.findOne({_id: res.insertedIds[0]}),'password')
     },
     updatePost: async(root, args, context, info) => {
       if(!Posts[id]){
@@ -88,9 +99,56 @@ const resolvers = {
       const res = await Comments.insert(args)
       return prepare(await Comments.findOne({_id: res.insertedIds}))
     },
-    createUser: async(root, args, context, info) => {
-      const res = await Users.insert(args.user)
-      return prepare(await Users.findOne({_id: res.insertedIds[0]}))
+    // TODO validation on create
+    // createUser: async(root, args, context, info) => {
+    //   const res = await Users.create(args.user)
+    //   return await Users.findOne({_id: res._id})
+    // },
+    login: async(root, args, context, info) => {
+       const req = args.user
+        return prepare(await Users.findOne({'email':req.email},'+password').then((user) => {
+          if(user){
+            // validate password
+            return bcrypt.compare(req.password, user.password).then((res) => {
+            if (res) {
+              // create jwt
+              const token = jwt.sign({id: user._id, email: user.email}, process.env.SECRET);
+              user.jwt = token;
+              context.user = Promise.resolve(user);
+              return user;
+            }
+            return Promise.reject('password incorrect')
+          })
+        }
+        return Promise.reject('email not found')
+      }))
+    },
+    signup: async(root, args, context, info) => {
+      const req = args.user
+      // find user by email
+      return Users.findOne({'email':req.email}).then((existing) => {
+        if (!existing) {
+          console.log("not existing: ", existing)
+          // hash password and create user
+          return  Users.create({
+            email: req.email,
+            firstname: req.firstname,
+            surname: req.surname,
+            enabled: req.enabled || true,
+            locked: req.locked || false,
+            password: req.password,
+          }).then((user) => {
+            console.log("req is valid: ", req)
+            const { id } = user;
+            const token = jwt.sign({ id:user._id, email: user.email }, process.env.SECRET);
+            user.jwt = token;
+            context.user = Promise.resolve(user);
+            return user;
+          });
+        }
+        console.log("existing: ", existing)
+        return Promise.reject('email already exists'); // email already exists
+      })
     }
   },
   Subscription: {
@@ -114,7 +172,7 @@ export default makeExecutableSchema({
   typeDefs: [
     SchemaDefinition, RootQuery, Mutations, Subscriptions,
     // ellipsis destructure array imported from the blog-post.js file as typeDefs only accepts an array of strings or functions
-    ...Post, PostInput, User, UserInput
+    ...Post, PostInput, User, UserInput, UserLoginInput
   ],
   resolvers: resolvers,
 });

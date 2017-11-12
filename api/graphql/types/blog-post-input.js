@@ -1,5 +1,5 @@
-const BlogPostInput = `
-  input BlogPostInput {
+const PostInput = `
+  input PostInput {
     title: String
     content: String
     author: String
@@ -7,4 +7,4 @@ const BlogPostInput = `
   }
 `;
 
-export default BlogPostInput;
+export default PostInput;

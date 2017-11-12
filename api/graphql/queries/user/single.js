@@ -5,12 +5,12 @@ import {
 } from 'graphql';
 import {Types} from 'mongoose';
 
-import blogPostType from '../../types/blog-post';
+import userType from '../../types/user';
 import getProjection from '../../get-projection';
-import modelPost from '../../../models/post';
+import modelUser from '../../../models/user';
 
 export default {
-  type: blogPostType,
+  type: userType,
   args: {
     id: {
       name: '_id',
@@ -19,9 +19,10 @@ export default {
   },
   resolve (root, params, options) {
     const projection = getProjection(options.fieldASTs[0]);
-    return modelPost
+    return modelUser
       .findById(params.id)
       .select(projection)
+      // .exclude('password')
       .exec();
   }
 };
