@@ -14,6 +14,14 @@ import authenticate from '../authentication'
 var ObjectId = require('mongodb').ObjectID;
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import {_,merge} from 'lodash'
+import * as Tweet from '../twitter/schema'
+
+
+// TODO Seperate queries, mutations and resolvers into GRAPHQL Type. The schema should contain no data fetching etc.
+// see https://marmelab.com/blog/2017/09/06/dive-into-graphql-part-iii-building-a-graphql-server-with-nodejs.html#start-with-a-schema
+// OR resolvers -> Models -> Connectors -> Schemas?
+
 
 // get the default connection
 var dbconn = mongoose.connection;
@@ -35,6 +43,9 @@ const RootQuery = `
     posts: [Post]
     comment(_id: String) : Comment
     user(email: String!) : User
+    tweet(id: String!) : Tweet
+    tweets(searchArgs: String!, count: Int) : [Tweet]
+
   }
 `;
 
@@ -55,6 +66,9 @@ const Subscriptions = `
 `
 const pubsub = new PubSub()
 
+
+// TODO implement apllo-resolvers to create reusable functions for use here. EG. authorization
+// see https://github.com/thebigredgeek/apollo-resolvers
 const resolvers = {
   RootQuery: {
     post: async (root, {_id}) => {
@@ -65,9 +79,9 @@ const resolvers = {
     },
     comment:async (root, {_id}) => {
      return prepare(await Comments.findOne(ObjectId(_id)))
-   },
-   user: async (root, {email}) => {
-     let Users = dbconn.collection('users')
+    },
+    user: async (root, {email}) => {
+      let Users = dbconn.collection('users')
       return prepare(await Users.findOne({email: email}))
     }
   },
@@ -99,11 +113,6 @@ const resolvers = {
       const res = await Comments.insert(args)
       return prepare(await Comments.findOne({_id: res.insertedIds}))
     },
-    // TODO validation on create
-    // createUser: async(root, args, context, info) => {
-    //   const res = await Users.create(args.user)
-    //   return await Users.findOne({_id: res._id})
-    // },
     login: async(root, args, context, info) => {
        const req = args.user
         return prepare(await Users.findOne({'email':req.email},'+password').then((user) => {
@@ -168,11 +177,15 @@ const SchemaDefinition = `
     subscription: Subscription
   }
 `;
+
+const mergedResolvers = merge(resolvers, Tweet.resolvers)
+
 export default makeExecutableSchema({
   typeDefs: [
     SchemaDefinition, RootQuery, Mutations, Subscriptions,
     // ellipsis destructure array imported from the blog-post.js file as typeDefs only accepts an array of strings or functions
-    ...Post, PostInput, User, UserInput, UserLoginInput
+    ...Post, PostInput, User, UserInput, UserLoginInput, ...Tweet.schema
   ],
-  resolvers: resolvers,
+  resolvers: mergedResolvers,
+  logger: { log: e => console.log(e)}
 });

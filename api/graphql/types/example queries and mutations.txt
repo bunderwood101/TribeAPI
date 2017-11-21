@@ -60,3 +60,11 @@ mutation signup{
     jwt
 	}
 }
+
+
+query gettweets {
+  tweets(searchArgs: "asos", count: 50) {
+    id_str
+    imageURLs{ url}
+  }
+}

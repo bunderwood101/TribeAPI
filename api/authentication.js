@@ -5,6 +5,7 @@ let saltRounds = parseInt(process.env.SALTROUNDS) || 10
 const HEADER_REGEX = /bearer token-(.*)$/;
 
 // see https://medium.com/react-native-training/building-chatty-part-7-authentication-in-graphql-cd37770e5ab3
+// add versioning to JWT based on Doc version set by mongoose to protect forgot password etc.
 
 export function authenticate(){
   async ({headers: {authorization}}, Users) => {

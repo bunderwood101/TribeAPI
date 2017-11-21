@@ -17,11 +17,12 @@ import schema from './graphql/schema'
 import config from './config'
 import db  from './db'
 import {modelUser} from './models/user';
+import Twitter from './twitter/models'
 
 const Users = modelUser
 
 export function run({
-                    PORT = process.env.port || 3010,
+                    PORT = parseInt(process.env.port) || 3010,
                     } = {}) {
 
   addSchemaLevelResolveFunction(schema, (root, args, context, info) => {
@@ -44,17 +45,20 @@ export function run({
   }), graphqlExpress(req => ({
     schema,
     context: {
-      user: req.user ?
-        Users.findOne({email: req.user.email}) : Promise.resolve(null),
+      user: req.user ? Users.findOne({email: req.user.email}) : Promise.resolve(null),
+      Twitter: new Twitter(),
     },
+
     tracing: true,
   })));
-  // app.use('/graphql', bodyParser.json(), graphqlExpress({
-  //   schema,
-  //   context: {},
-  //   // Enable tracing:
-  //   tracing: true,
-  // }));
+
+
+  // error handling for invalid jsonwebtoken
+  app.use(function (err, req, res, next) {
+    if (err.name === 'UnauthorizedError') {
+      res.status(401).send('invalid token...');
+    }
+  });
 
   app.use('/graphiql', graphiqlExpress({
     endpointURL: '/graphql',
